@@ -1,0 +1,2152 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bubble Pop - Hand Gesture Quiz</title>
+
+<!-- MediaPipe untuk deteksi tangan -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+<style>
+/* =========================================
+   1. PENGATURAN DASAR
+========================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #020617;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    color: white;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.flex {
+    display: flex;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* =========================================
+   2. AREA PERMAINAN
+========================================= */
+
+#gameContainer {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: #020617;
+    overflow: hidden;
+}
+
+#video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    z-index: 0;
+}
+
+#gameCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* =========================================
+   3. INFORMASI SKOR DAN KAMERA
+========================================= */
+
+#topInfo {
+    position: absolute;
+    z-index: 20;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+}
+
+.info-camera,
+.score-box {
+    background: rgba(0, 0, 0, .65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 14px;
+    padding: 12px 18px;
+}
+
+.camera-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.camera-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+    flex-shrink: 0;
+}
+
+.camera-dot.green {
+    background: #4ade80;
+}
+
+.camera-dot.yellow {
+    background: #facc15;
+}
+
+.camera-status {
+    font-size: 12px;
+    color: white;
+}
+
+.info-label {
+    font-size: 11px;
+    color: #cbd5e1;
+    margin-top: 8px;
+}
+
+.score-container {
+    display: flex;
+    gap: 8px;
+}
+
+.score-box {
+    min-width: 85px;
+    text-align: center;
+}
+
+.score-label {
+    color: #cbd5e1;
+    font-size: 11px;
+}
+
+.score-value {
+    font-size: 24px;
+    font-weight: 900;
+    margin-top: 3px;
+}
+
+.cyan {
+    color: #22d3ee;
+}
+
+/* =========================================
+   4. TOMBOL KELUAR
+========================================= */
+
+#gameExitButton {
+    position: absolute;
+    z-index: 40;
+    top: 82px;
+    right: 18px;
+    padding: 11px 18px;
+    border-radius: 30px;
+    background: rgba(220, 38, 38, .92);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .25);
+    transition: .2s;
+}
+
+#gameExitButton:hover {
+    background: #ef4444;
+    transform: translateY(-2px);
+}
+
+/* =========================================
+   5. PANEL PERTANYAAN
+========================================= */
+
+#questionPanel {
+    position: absolute;
+    z-index: 20;
+    top: 85px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(92%, 760px);
+}
+
+.question-card {
+    background: rgba(2, 6, 23, .82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 20px;
+    padding: 18px 22px;
+    text-align: center;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, .25);
+}
+
+.question-label {
+    color: #22d3ee;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+}
+
+#question {
+    color: white;
+    font-size: 23px;
+    line-height: 1.35;
+    font-weight: 900;
+}
+
+.question-instruction {
+    color: #cbd5e1;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+/* =========================================
+   6. PETUNJUK GESTUR
+========================================= */
+
+#pinchGuide {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    pointer-events: none;
+    width: max-content;
+    max-width: 94%;
+}
+
+.gesture-card {
+    background: rgba(0, 0, 0, .65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 40px;
+    padding: 12px 22px;
+    color: white;
+    font-size: 13px;
+    text-align: center;
+}
+
+/* =========================================
+   7. FEEDBACK JAWABAN
+========================================= */
+
+#feedback {
+    position: absolute;
+    z-index: 30;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px 35px;
+    border-radius: 20px;
+    color: white;
+    font-weight: 900;
+    font-size: clamp(25px, 5vw, 45px);
+    text-align: center;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .3);
+    animation: feedbackIn .35s ease both;
+}
+
+.feedback-correct {
+    background: rgba(22, 163, 74, .95);
+}
+
+.feedback-wrong {
+    background: rgba(220, 38, 38, .95);
+}
+
+@keyframes feedbackIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%) scale(.8);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* =========================================
+   8. HALAMAN PEMBUKA
+========================================= */
+
+#startScreen {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(2, 6, 23, .78),
+            rgba(8, 47, 73, .58)
+        ),
+        url("ganesa.png") center center / cover no-repeat;
+
+    overflow: hidden;
+    isolation: isolate;
+}
+
+#startScreen::before {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(
+        circle at 50% 45%,
+        rgba(34, 211, 238, .24),
+        transparent 42%
+    );
+    animation: introAmbient 7s ease-in-out infinite alternate;
+}
+
+.intro-content {
+    position: relative;
+    width: min(92vw, 560px);
+    padding: clamp(28px, 5vw, 48px);
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 30px;
+    background: rgba(2, 6, 23, .48);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, .38);
+    text-align: center;
+    animation: introCardIn .9s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.intro-icon {
+    display: inline-block;
+    font-size: 75px;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 8px 22px rgba(34, 211, 238, .45));
+    animation: introFloat 3s ease-in-out infinite;
+}
+
+.intro-title {
+    font-size: 42px;
+    font-weight: 900;
+    color: white;
+    margin-bottom: 12px;
+    animation: introTextIn .8s .12s both;
+}
+
+.intro-title span {
+    color: #22d3ee;
+}
+
+.intro-description {
+    color: #e2e8f0;
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 28px;
+    animation: introTextIn .8s .25s both;
+}
+
+.intro-note {
+    color: rgba(203, 213, 225, .8);
+    font-size: 12px;
+    margin-top: 20px;
+    animation: introTextIn .8s .38s both;
+}
+
+#startButton {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .4);
+    background: linear-gradient(
+        110deg,
+        #22d3ee,
+        #67e8f9 48%,
+        #38bdf8
+    );
+    color: #082f49;
+    font-weight: 900;
+    letter-spacing: .08em;
+    padding: 17px 34px;
+    border-radius: 999px;
+    box-shadow:
+        0 10px 30px rgba(34, 211, 238, .28),
+        inset 0 1px 0 rgba(255, 255, 255, .65);
+    transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+    animation:
+        introButtonIn .8s .48s both,
+        introButtonGlow 2.6s 1.4s ease-in-out infinite;
+}
+
+#startButton::before {
+    content: "";
+    position: absolute;
+    top: -80%;
+    left: -45%;
+    width: 35%;
+    height: 260%;
+    transform: rotate(25deg);
+    background: rgba(255, 255, 255, .5);
+    transition: left .6s ease;
+}
+
+#startButton:hover {
+    transform: translateY(-4px) scale(1.025);
+    filter: brightness(1.06);
+    box-shadow: 0 16px 38px rgba(34, 211, 238, .42);
+}
+
+#startButton:hover::before {
+    left: 130%;
+}
+
+#startButton:active {
+    transform: scale(.97);
+}
+
+#startButton:disabled {
+    opacity: .7;
+    cursor: wait;
+    animation: none;
+}
+
+#errorMessage {
+    color: #f87171;
+    font-size: 13px;
+    margin-top: 18px;
+    line-height: 1.5;
+}
+
+@keyframes introCardIn {
+    from {
+        opacity: 0;
+        transform: translateY(28px) scale(.97);
+        filter: blur(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes introTextIn {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes introButtonIn {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(.94);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes introFloat {
+    0%, 100% {
+        transform: translateY(0) rotate(-4deg);
+    }
+    50% {
+        transform: translateY(-10px) rotate(4deg);
+    }
+}
+
+@keyframes introButtonGlow {
+    0%, 100% {
+        box-shadow: 0 10px 30px rgba(34, 211, 238, .25);
+    }
+    50% {
+        box-shadow: 0 10px 38px rgba(34, 211, 238, .48);
+    }
+}
+
+@keyframes introAmbient {
+    from {
+        transform: translate3d(-2%, 0, 0) scale(1);
+    }
+    to {
+        transform: translate3d(2%, -2%, 0) scale(1.08);
+    }
+}
+
+/* =========================================
+   9. HALAMAN HASIL
+========================================= */
+
+#resultScreen {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 6, 23, .95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.result-content {
+    text-align: center;
+    padding: 24px;
+}
+
+.result-icon {
+    font-size: 75px;
+    margin-bottom: 20px;
+}
+
+.result-title {
+    color: white;
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 900;
+}
+
+.result-subtitle {
+    color: #94a3b8;
+    margin-top: 12px;
+}
+
+#finalScore {
+    color: #22d3ee;
+    font-size: 75px;
+    font-weight: 900;
+    margin: 24px 0;
+}
+
+#resultMessage {
+    color: white;
+    margin-bottom: 28px;
+    line-height: 1.5;
+}
+
+#restartButton {
+    background: #06b6d4;
+    color: #020617;
+    font-weight: bold;
+    padding: 16px 40px;
+    border-radius: 40px;
+    transition: .2s;
+}
+
+#restartButton:hover {
+    background: #22d3ee;
+    transform: translateY(-3px);
+}
+
+#exitButton {
+    display: block;
+    margin: 18px auto 0;
+    color: #94a3b8;
+    background: transparent;
+    font-size: 13px;
+}
+
+#exitButton:hover {
+    color: white;
+}
+
+/* =========================================
+   10. COPYRIGHT
+========================================= */
+
+#copyright {
+    position: absolute;
+    bottom: 8px;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    text-align: center;
+    pointer-events: none;
+    padding: 0 12px;
+}
+
+#copyright p {
+    color: rgba(255, 255, 255, .6);
+    font-size: 10px;
+    letter-spacing: .05em;
+}
+
+#copyright span {
+    color: #22d3ee;
+    font-weight: bold;
+}
+
+/* =========================================
+   11. RESPONSIVE
+========================================= */
+
+@media (max-width: 600px) {
+    #questionPanel {
+        top: 115px;
+    }
+
+    #question {
+        font-size: 17px;
+    }
+
+    .question-card {
+        padding: 15px 14px;
+    }
+
+    #gameExitButton {
+        top: 72px;
+        right: 12px;
+        padding: 8px 12px;
+        font-size: 10px;
+    }
+
+    .score-box {
+        min-width: 65px;
+        padding: 8px 10px;
+    }
+
+    .score-value {
+        font-size: 20px;
+    }
+
+    .info-camera {
+        padding: 9px 11px;
+    }
+
+    .camera-status {
+        font-size: 10px;
+    }
+
+    .intro-content {
+        padding: 28px 22px;
+        border-radius: 24px;
+    }
+
+    .intro-title {
+        font-size: 34px;
+    }
+
+    .intro-icon {
+        font-size: 65px;
+    }
+
+    #startButton {
+        width: 100%;
+        padding: 16px 18px;
+    }
+
+    .gesture-card {
+        font-size: 11px;
+        padding: 10px 15px;
+    }
+
+    #feedback {
+        font-size: 27px;
+        padding: 16px 24px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #startScreen *,
+    #startScreen::before {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="gameContainer">
+
+    <!-- KAMERA -->
+    <video id="video" autoplay muted playsinline></video>
+
+    <!-- CANVAS PERMAINAN -->
+    <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+    <!-- INFORMASI SKOR DAN KAMERA -->
+    <div id="topInfo">
+
+        <div class="info-camera">
+            <div class="camera-row">
+                <span id="cameraDot" class="camera-dot"></span>
+                <span id="cameraStatus" class="camera-status">
+                    Kamera belum aktif
+                </span>
+            </div>
+            <p class="info-label">BUBBLE POP GAME</p>
+        </div>
+
+        <div class="score-container">
+
+            <div class="score-box">
+                <p class="score-label">SKOR</p>
+                <p id="score" class="score-value cyan">0</p>
+            </div>
+
+            <div class="score-box">
+                <p class="score-label">SOAL</p>
+                <p id="questionNumber" class="score-value">1/16</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- TOMBOL KELUAR -->
+    <button id="gameExitButton">
+        ✕ KELUAR
+    </button>
+
+    <!-- PERTANYAAN -->
+    <div id="questionPanel">
+        <div class="question-card">
+
+            <p class="question-label">PERTANYAAN</p>
+
+            <h2 id="question">
+                Apa kepanjangan dari HTML?
+            </h2>
+
+            <p class="question-instruction">
+                Arahkan ujung telunjuk ke bubble, lalu cubit ibu jari dan telunjuk.
+            </p>
+
+        </div>
+    </div>
+
+    <!-- PETUNJUK GESTUR -->
+    <div id="pinchGuide">
+        <div class="gesture-card">
+            <span id="gestureText">
+                ✌️ Gunakan ibu jari dan telunjuk
+            </span>
+        </div>
+    </div>
+
+    <!-- FEEDBACK -->
+    <div id="feedback" class="hidden"></div>
+
+    <!-- HALAMAN PEMBUKA -->
+    <div id="startScreen">
+
+        <div class="intro-content">
+
+            <div class="intro-icon">🫧</div>
+
+            <h1 class="intro-title">
+                Bubble <span>Pop!</span>
+            </h1>
+
+            <p class="intro-description">
+                Kenali SMK Ganesa sambil bermain!
+                Aktifkan kamera dan jawab pertanyaan.
+                Pecahkan gelembung dengan menyatukan
+                ujung ibu jari dan telunjuk.
+            </p>
+
+            <button id="startButton">
+                AKTIFKAN KAMERA
+            </button>
+
+            <p id="errorMessage"></p>
+
+            <p class="intro-note">
+                Pastikan izin kamera sudah diberikan.
+            </p>
+
+        </div>
+    </div>
+
+    <!-- HALAMAN HASIL -->
+    <div id="resultScreen" class="hidden">
+
+        <div class="result-content">
+
+            <div class="result-icon">🏆</div>
+
+            <h2 class="result-title">
+                Permainan Selesai!
+            </h2>
+
+            <p class="result-subtitle">
+                Skor akhir kamu
+            </p>
+
+            <p id="finalScore">0</p>
+
+            <p id="resultMessage">
+                Hebat! Kamu sudah menyelesaikan permainan.
+            </p>
+
+            <button id="restartButton">
+                MAIN LAGI
+            </button>
+
+            <button id="exitButton">
+                MATIKAN KAMERA
+            </button>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- COPYRIGHT -->
+<div id="copyright">
+    <p>
+        © 2026
+        <span>Teacher AI Anggia Putri</span>.
+        All Rights Reserved.
+    </p>
+</div>
+
+
+<script>
+
+/* =========================================
+   1. DATA PERTANYAAN
+========================================= */
+
+const questions = [
+
+    {
+        question: "Di manakah lokasi SMK Ganesa?",
+        answers: [
+            "Jl. Raya Kadupugur No. 66, Desa Cijalingan, Cicantayan, Sukabumi",
+            "Cisaat, Kabupaten Sukabumi",
+            "Cibadak, Kabupaten Sukabumi"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Ada berapa jurusan di SMK Ganesa?",
+        answers: [
+            "2 jurusan",
+            "3 jurusan",
+            "4 jurusan"
+        ],
+        correct: 1
+    },
+
+    {
+        question: "Apa saja tiga jurusan di SMK Ganesa?",
+        answers: [
+            "TKJ, PBK, dan DKV",
+            "TKR, Tata Boga, dan Perhotelan",
+            "RPL, Farmasi, dan Akuntansi"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Apa kepanjangan dari TKJ?",
+        answers: [
+            "Teknik Komputer dan Jaringan",
+            "Teknologi Komunikasi Jarak Jauh",
+            "Tata Kelola Jaringan"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Apa kepanjangan dari PBK?",
+        answers: [
+            "Pendidikan Bahasa dan Komputer",
+            "Perbankan dan Keuangan Mikro",
+            "Pengelolaan Bisnis Kreatif"
+        ],
+        correct: 1
+    },
+
+    {
+        question: "Apa kepanjangan dari DKV?",
+        answers: [
+            "Desain Komunikasi Visual",
+            "Digital Komputer Virtual",
+            "Desain Konstruksi Visual"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Apa akreditasi SMK Ganesa berdasarkan data sekolah?",
+        answers: [
+            "Akreditasi B",
+            "Akreditasi A",
+            "Belum terakreditasi"
+        ],
+        correct: 1
+    },
+
+    {
+        question: "Siapa nama kepala SMK Ganesa?",
+        answers: [
+            "Enung Nurjanah, M.Pd.",
+            "Ki Hajar Dewantara",
+            "R.A. Kartini"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Apa nama desa tempat SMK Ganesa berada?",
+        answers: [
+            "Desa Cijalingan",
+            "Desa Sukamaju",
+            "Desa Cisaat"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Apa kepanjangan dari SMK?",
+        answers: [
+            "Sekolah Menengah Kejuruan",
+            "Sekolah Menengah Kesenian",
+            "Sistem Manajemen Kelas"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Apa fungsi utama router dalam jaringan komputer?",
+        answers: [
+            "Menghubungkan dan mengarahkan lalu lintas antarjaringan",
+            "Mencetak dokumen",
+            "Menampilkan gambar"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Perangkat untuk menghubungkan komputer ke jaringan kabel adalah?",
+        answers: [
+            "Kartu jaringan (NIC)",
+            "Speaker",
+            "Scanner"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Apa kepanjangan dari CPU?",
+        answers: [
+            "Computer Personal Unit",
+            "Central Processing Unit",
+            "Control Program Utility"
+        ],
+        correct: 1
+    },
+
+    {
+        question: "Apa kepanjangan dari HTML?",
+        answers: [
+            "HyperText Markup Language",
+            "HighText Machine Language",
+            "Hyper Transfer Main Link"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Apa fungsi CSS pada website?",
+        answers: [
+            "Mengatur tampilan dan tata letak halaman",
+            "Menyimpan data pengguna",
+            "Menghubungkan kabel jaringan"
+        ],
+        correct: 0
+    },
+
+    {
+        question: "Apa fungsi JavaScript pada website?",
+        answers: [
+            "Membuat halaman web menjadi interaktif",
+            "Mengganti perangkat keras",
+            "Mempercepat koneksi listrik"
+        ],
+        correct: 0
+    }
+
+];
+
+
+/* =========================================
+   2. ELEMENT DAN VARIABEL
+========================================= */
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+const startButton = document.getElementById("startButton");
+const restartButton = document.getElementById("restartButton");
+const exitButton = document.getElementById("exitButton");
+const gameExitButton = document.getElementById("gameExitButton");
+
+const startScreen = document.getElementById("startScreen");
+const resultScreen = document.getElementById("resultScreen");
+
+const scoreText = document.getElementById("score");
+const questionText = document.getElementById("question");
+const questionNumber = document.getElementById("questionNumber");
+
+const cameraStatus = document.getElementById("cameraStatus");
+const cameraDot = document.getElementById("cameraDot");
+
+const errorMessage = document.getElementById("errorMessage");
+const feedback = document.getElementById("feedback");
+const gestureText = document.getElementById("gestureText");
+
+let currentQuestion = 0;
+let score = 0;
+
+let bubbles = [];
+let particles = [];
+let pointer = null;
+
+let hands = null;
+let cameraStream = null;
+
+let cameraActive = false;
+let gameActive = false;
+
+let animationFrame = null;
+let detectionRunning = false;
+
+let pinchActive = false;
+let wasPinching = false;
+
+let lastPopTime = 0;
+let questionLocked = false;
+let feedbackTimer = null;
+
+const bubbleColors = [
+    [34, 211, 238],
+    [168, 85, 247],
+    [236, 72, 153],
+    [52, 211, 153],
+    [96, 165, 250],
+    [251, 191, 36]
+];
+
+
+/* =========================================
+   3. RESPONSIVE CANVAS
+========================================= */
+
+function resizeCanvas() {
+    canvas.width = 960;
+    canvas.height = 540;
+}
+
+resizeCanvas();
+
+
+/* =========================================
+   4. POSISI TANGAN
+========================================= */
+
+function landmarkToCanvas(x, y) {
+
+    const rect = video.getBoundingClientRect();
+
+    const vw = video.videoWidth || 960;
+    const vh = video.videoHeight || 540;
+
+    const scale = Math.max(
+        rect.width / vw,
+        rect.height / vh
+    );
+
+    const renderedWidth = vw * scale;
+    const renderedHeight = vh * scale;
+
+    const cropX = (renderedWidth - rect.width) / 2;
+    const cropY = (renderedHeight - rect.height) / 2;
+
+    const screenX = rect.width - (x * renderedWidth - cropX);
+    const screenY = y * renderedHeight - cropY;
+
+    return {
+        x: screenX / rect.width * canvas.width,
+        y: screenY / rect.height * canvas.height
+    };
+}
+
+
+/* =========================================
+   5. CLASS BUBBLE
+========================================= */
+
+class Bubble {
+
+    constructor(index, answer) {
+
+        this.index = index;
+        this.answer = answer;
+        this.radius = 65;
+
+        const positions = [
+            canvas.width * .18,
+            canvas.width * .50,
+            canvas.width * .82
+        ];
+
+        this.x = positions[index];
+
+        // Posisi awal bubble.
+        this.y = canvas.height * .80 + Math.random() * 35;
+
+        // Kecepatan bubble.
+        this.speed = 1.5 + Math.random() * .6;
+
+        this.drift = .28 + Math.random() * .35;
+        this.phase = Math.random() * Math.PI * 2;
+
+        this.color = [
+            ...bubbleColors[
+                Math.floor(Math.random() * bubbleColors.length)
+            ]
+        ];
+
+        this.popped = false;
+    }
+
+    update() {
+
+        this.y -= this.speed;
+
+        this.phase += .025;
+
+        this.x += Math.sin(this.phase) * this.drift * .4;
+
+        // Bubble muncul lagi dari bawah.
+        if (this.y < canvas.height * .30) {
+
+            this.y = canvas.height * .80 + Math.random() * 35;
+
+            this.x = this.radius +
+                Math.random() * (canvas.width - this.radius * 2);
+        }
+
+        this.x = Math.max(
+            this.radius,
+            Math.min(canvas.width - this.radius, this.x)
+        );
+    }
+
+    draw() {
+
+        if (this.popped) return;
+
+        const [r, g, b] = this.color;
+
+        const gradient = ctx.createRadialGradient(
+            this.x - 20,
+            this.y - 25,
+            2,
+            this.x,
+            this.y,
+            this.radius
+        );
+
+        gradient.addColorStop(
+            0,
+            `rgba(${r},${g},${b},0.55)`
+        );
+
+        gradient.addColorStop(
+            .65,
+            `rgba(${r},${g},${b},0.25)`
+        );
+
+        gradient.addColorStop(
+            1,
+            `rgba(${r},${g},${b},0.08)`
+        );
+
+        ctx.save();
+
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = `rgba(${r},${g},${b},0.8)`;
+
+        ctx.beginPath();
+        ctx.arc(
+            this.x,
+            this.y,
+            this.radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.95)`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.restore();
+
+        // Pantulan cahaya bubble.
+        ctx.beginPath();
+
+        ctx.ellipse(
+            this.x - 20,
+            this.y - 25,
+            14,
+            7,
+            -.5,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fill();
+
+        // Tulisan jawaban.
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "bold 14px Arial";
+
+        drawWrappedText(
+            this.answer,
+            this.x,
+            this.y,
+            this.radius * 1.5,
+            18
+        );
+    }
+}
+
+
+/* =========================================
+   6. TEXT WRAPPING
+========================================= */
+
+function drawWrappedText(text, x, y, maxWidth, lineHeight) {
+
+    const words = text.split(" ");
+    const lines = [];
+
+    let line = "";
+
+    for (const word of words) {
+
+        const testLine = line
+            ? line + " " + word
+            : word;
+
+        if (
+            ctx.measureText(testLine).width > maxWidth &&
+            line
+        ) {
+            lines.push(line);
+            line = word;
+
+        } else {
+            line = testLine;
+        }
+    }
+
+    if (line) {
+        lines.push(line);
+    }
+
+    const startY = y - ((lines.length - 1) * lineHeight) / 2;
+
+    lines.forEach((item, index) => {
+
+        ctx.fillText(
+            item,
+            x,
+            startY + index * lineHeight
+        );
+    });
+}
+
+
+/* =========================================
+   7. PARTICLE
+========================================= */
+
+function createParticles(x, y, color) {
+
+    for (let i = 0; i < 35; i++) {
+
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 8;
+
+        particles.push({
+
+            x,
+            y,
+
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+
+            radius: 2 + Math.random() * 5,
+            alpha: 1,
+
+            color: `rgb(${color[0]},${color[1]},${color[2]})`
+
+        });
+    }
+}
+
+
+function updateParticles() {
+
+    particles.forEach(p => {
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        p.vy += .05;
+
+        p.alpha -= .025;
+        p.radius *= .97;
+
+        ctx.globalAlpha = Math.max(0, p.alpha);
+
+        ctx.fillStyle = p.color;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            p.radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    });
+
+    ctx.globalAlpha = 1;
+
+    particles = particles.filter(p => p.alpha > 0);
+}
+
+
+/* =========================================
+   8. FEEDBACK
+========================================= */
+
+function showFeedback(message, correct) {
+
+    clearTimeout(feedbackTimer);
+
+    feedback.textContent = message;
+
+    feedback.className = correct
+        ? "feedback-correct"
+        : "feedback-wrong";
+
+    feedbackTimer = setTimeout(() => {
+
+        feedback.className = "hidden";
+
+    }, 900);
+}
+
+
+/* =========================================
+   9. LOAD QUESTION
+========================================= */
+
+function loadQuestion() {
+
+    if (currentQuestion >= questions.length) {
+
+        finishGame();
+        return;
+    }
+
+    const q = questions[currentQuestion];
+
+    questionText.textContent = q.question;
+
+    questionNumber.textContent =
+        `${currentQuestion + 1}/${questions.length}`;
+
+    bubbles = [];
+
+    questionLocked = false;
+    wasPinching = false;
+
+    q.answers.forEach((answer, index) => {
+
+        bubbles.push(
+            new Bubble(index, answer)
+        );
+    });
+}
+
+
+/* =========================================
+   10. POP BUBBLE
+========================================= */
+
+function popBubble(bubble) {
+
+    if (
+        bubble.popped ||
+        questionLocked ||
+        !gameActive
+    ) {
+        return;
+    }
+
+    bubble.popped = true;
+
+    const q = questions[currentQuestion];
+
+    const isCorrect = bubble.index === q.correct;
+
+    if (isCorrect) {
+
+        createParticles(
+            bubble.x,
+            bubble.y,
+            [34, 197, 94]
+        );
+
+        questionLocked = true;
+
+        score += 10;
+
+        scoreText.textContent = score;
+
+        showFeedback("BENAR! +10", true);
+
+        currentQuestion++;
+
+        setTimeout(() => {
+
+            if (gameActive) {
+                loadQuestion();
+            }
+
+        }, 1000);
+
+    } else {
+
+        createParticles(
+            bubble.x,
+            bubble.y,
+            [239, 68, 68]
+        );
+
+        score = Math.max(0, score - 2);
+
+        scoreText.textContent = score;
+
+        showFeedback("SALAH! -2", false);
+
+        setTimeout(() => {
+
+            if (!gameActive || questionLocked) {
+                return;
+            }
+
+            const index = bubbles.indexOf(bubble);
+
+            if (index !== -1) {
+
+                bubbles[index] = new Bubble(
+                    bubble.index,
+                    bubble.answer
+                );
+            }
+
+        }, 650);
+    }
+}
+
+
+/* =========================================
+   11. COLLISION
+========================================= */
+
+function checkCollision() {
+
+    if (
+        !pointer ||
+        !gameActive ||
+        questionLocked
+    ) {
+        return;
+    }
+
+    if (!pinchActive) {
+
+        wasPinching = false;
+        return;
+    }
+
+    if (wasPinching) {
+        return;
+    }
+
+    const now = Date.now();
+
+    if (now - lastPopTime < 400) {
+        return;
+    }
+
+    for (const bubble of bubbles) {
+
+        if (bubble.popped) {
+            continue;
+        }
+
+        const dx = pointer.x - bubble.x;
+        const dy = pointer.y - bubble.y;
+
+        const distance = Math.hypot(dx, dy);
+
+        if (distance < bubble.radius + 38) {
+
+            wasPinching = true;
+            lastPopTime = now;
+
+            popBubble(bubble);
+
+            break;
+        }
+    }
+}
+
+
+/* =========================================
+   12. POINTER
+========================================= */
+
+function drawPointer() {
+
+    if (!pointer) {
+        return;
+    }
+
+    ctx.save();
+
+    ctx.beginPath();
+
+    ctx.arc(
+        pointer.x,
+        pointer.y,
+        pinchActive ? 23 : 16,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = pinchActive
+        ? "rgba(34,197,94,0.35)"
+        : "rgba(34,211,238,0.30)";
+
+    ctx.fill();
+
+    ctx.strokeStyle = pinchActive
+        ? "#22c55e"
+        : "#67e8f9";
+
+    ctx.lineWidth = 4;
+
+    ctx.stroke();
+
+    ctx.beginPath();
+
+    ctx.arc(
+        pointer.x,
+        pointer.y,
+        5,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+
+    ctx.restore();
+}
+
+
+/* =========================================
+   13. GAME LOOP
+========================================= */
+
+function gameLoop() {
+
+    if (!cameraActive && !gameActive) {
+
+        animationFrame = null;
+        return;
+    }
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    if (gameActive) {
+
+        bubbles.forEach(bubble => {
+
+            bubble.update();
+            bubble.draw();
+
+        });
+
+        checkCollision();
+    }
+
+    updateParticles();
+    drawPointer();
+
+    animationFrame = requestAnimationFrame(gameLoop);
+}
+
+
+/* =========================================
+   14. HASIL DETEKSI TANGAN
+========================================= */
+
+function onHandResults(results) {
+
+    if (
+        results.multiHandLandmarks &&
+        results.multiHandLandmarks.length > 0
+    ) {
+
+        const landmarks = results.multiHandLandmarks[0];
+
+        const thumb = landmarks[4];
+        const indexFinger = landmarks[8];
+
+        const distance = Math.hypot(
+            thumb.x - indexFinger.x,
+            thumb.y - indexFinger.y
+        );
+
+        pinchActive = distance < .085;
+
+        pointer = landmarkToCanvas(
+            indexFinger.x,
+            indexFinger.y
+        );
+
+        if (pinchActive) {
+
+            cameraStatus.textContent =
+                "Jari menyatu - Pecahkan bubble!";
+
+            gestureText.textContent =
+                "👌 JARI MENYATU!";
+
+            cameraDot.className = "camera-dot green";
+
+        } else {
+
+            cameraStatus.textContent =
+                "Tangan terdeteksi";
+
+            gestureText.textContent =
+                "Arahkan telunjuk, lalu cubit ibu jari dan telunjuk";
+
+            cameraDot.className = "camera-dot yellow";
+        }
+
+    } else {
+
+        pointer = null;
+        pinchActive = false;
+        wasPinching = false;
+
+        cameraStatus.textContent =
+            "Arahkan tangan ke kamera";
+
+        gestureText.textContent =
+            "Tunjukkan tangan ke kamera";
+
+        cameraDot.className = "camera-dot yellow";
+    }
+}
+
+
+/* =========================================
+   15. DETEKSI MEDIAPIPE
+========================================= */
+
+async function detectHands() {
+
+    if (detectionRunning) {
+        return;
+    }
+
+    detectionRunning = true;
+
+    try {
+
+        while (cameraActive && hands) {
+
+            if (
+                video.readyState >= 2 &&
+                video.videoWidth > 0
+            ) {
+
+                await hands.send({
+                    image: video
+                });
+            }
+
+            await new Promise(resolve => {
+                setTimeout(resolve, 35);
+            });
+        }
+
+    } catch (error) {
+
+        console.error("Hand tracking error:", error);
+
+        if (cameraActive) {
+
+            cameraStatus.textContent =
+                "Deteksi tangan mengalami gangguan";
+        }
+
+    } finally {
+
+        detectionRunning = false;
+    }
+}
+
+
+/* =========================================
+   16. AKTIFKAN KAMERA
+========================================= */
+
+async function startCamera() {
+
+    startButton.disabled = true;
+
+    startButton.textContent = "MEMUAT KAMERA...";
+
+    errorMessage.textContent = "";
+
+    try {
+
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+
+            throw new Error("BROWSER_NOT_SUPPORTED");
+        }
+
+        if (!window.isSecureContext) {
+
+            throw new Error("INSECURE_CONTEXT");
+        }
+
+        cameraStatus.textContent =
+            "Meminta izin kamera...";
+
+        cameraDot.className = "camera-dot yellow";
+
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+
+            video: {
+                facingMode: "user",
+                width: {
+                    ideal: 640
+                },
+                height: {
+                    ideal: 360
+                },
+                frameRate: {
+                    ideal: 30
+                }
+            },
+
+            audio: false
+
+        });
+
+        video.srcObject = cameraStream;
+
+        video.muted = true;
+        video.autoplay = true;
+        video.playsInline = true;
+
+        await video.play();
+
+        if (
+            !video.videoWidth ||
+            !video.videoHeight
+        ) {
+
+            await new Promise((resolve, reject) => {
+
+                const timeout = setTimeout(() => {
+
+                    reject(new Error("VIDEO_TIMEOUT"));
+
+                }, 10000);
+
+                video.onloadedmetadata = () => {
+
+                    clearTimeout(timeout);
+                    resolve();
+                };
+            });
+        }
+
+        if (typeof Hands === "undefined") {
+
+            throw new Error("MEDIAPIPE_NOT_LOADED");
+        }
+
+        hands = new Hands({
+
+            locateFile: file => {
+
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+
+        });
+
+        hands.setOptions({
+
+            maxNumHands: 1,
+
+            modelComplexity: 1,
+
+            minDetectionConfidence: .65,
+
+            minTrackingConfidence: .6
+
+        });
+
+        hands.onResults(onHandResults);
+
+        startScreen.classList.add("hidden");
+
+        cameraActive = true;
+        gameActive = true;
+
+        loadQuestion();
+
+        if (!animationFrame) {
+
+            gameLoop();
+        }
+
+        cameraStatus.textContent =
+            "Kamera aktif - Arahkan tangan";
+
+        cameraDot.className = "camera-dot green";
+
+        detectHands();
+
+    } catch (error) {
+
+        console.error("Startup Error:", error);
+
+        const messages = {
+
+            BROWSER_NOT_SUPPORTED:
+                "Browser tidak mendukung akses kamera.",
+
+            INSECURE_CONTEXT:
+                "Buka halaman menggunakan Live Server atau HTTPS.",
+
+            MEDIAPIPE_NOT_LOADED:
+                "MediaPipe gagal dimuat. Periksa internet.",
+
+            NotAllowedError:
+                "Izin kamera ditolak. Periksa izin kamera Chrome dan Mac.",
+
+            NotFoundError:
+                "Chrome tidak menemukan perangkat kamera.",
+
+            NotReadableError:
+                "Kamera sedang digunakan aplikasi lain.",
+
+            VIDEO_TIMEOUT:
+                "Kamera terdeteksi tetapi video tidak berhasil dimulai."
+
+        };
+
+        errorMessage.textContent =
+            messages[error.name] ||
+            messages[error.message] ||
+            `Error: ${error.name || "Unknown"} - ${error.message || ""}`;
+
+        stopCamera(false);
+
+    } finally {
+
+        startButton.disabled = false;
+
+        startButton.textContent =
+            "AKTIFKAN KAMERA";
+    }
+}
+
+
+/* =========================================
+   17. PERMAINAN SELESAI
+========================================= */
+
+function finishGame() {
+
+    gameActive = false;
+
+    resultScreen.classList.remove("hidden");
+
+    document.getElementById("finalScore").textContent = score;
+
+    const resultMessage =
+        document.getElementById("resultMessage");
+
+    if (score >= 40) {
+
+        resultMessage.textContent =
+            "Luar biasa! Kamu menguasai semua pertanyaan!";
+
+    } else if (score >= 20) {
+
+        resultMessage.textContent =
+            "Bagus! Terus tingkatkan kemampuanmu!";
+
+    } else {
+
+        resultMessage.textContent =
+            "Tetap semangat! Coba lagi dan tingkatkan skormu!";
+    }
+}
+
+
+/* =========================================
+   18. ULANGI PERMAINAN
+========================================= */
+
+function restartGame() {
+
+    currentQuestion = 0;
+    score = 0;
+
+    scoreText.textContent = "0";
+
+    particles = [];
+    bubbles = [];
+
+    pointer = null;
+
+    pinchActive = false;
+    wasPinching = false;
+
+    questionLocked = false;
+
+    resultScreen.classList.add("hidden");
+
+    feedback.classList.add("hidden");
+
+    gameActive = true;
+
+    loadQuestion();
+}
+
+
+/* =========================================
+   19. MATIKAN KAMERA DAN KELUAR
+========================================= */
+
+function stopCamera(showStart = true) {
+
+    cameraActive = false;
+    gameActive = false;
+
+    pointer = null;
+
+    pinchActive = false;
+    wasPinching = false;
+
+    if (cameraStream) {
+
+        cameraStream.getTracks().forEach(track => {
+            track.stop();
+        });
+
+        cameraStream = null;
+    }
+
+    video.srcObject = null;
+
+    if (hands) {
+
+        const oldHands = hands;
+
+        hands = null;
+
+        try {
+
+            oldHands.close();
+
+        } catch (error) {
+
+            console.warn(error);
+        }
+    }
+
+    if (animationFrame) {
+
+        cancelAnimationFrame(animationFrame);
+
+        animationFrame = null;
+    }
+
+    clearTimeout(feedbackTimer);
+
+    bubbles = [];
+    particles = [];
+
+    resultScreen.classList.add("hidden");
+
+    if (showStart) {
+
+        startScreen.classList.remove("hidden");
+    }
+
+    cameraStatus.textContent =
+        "Kamera belum aktif";
+
+    cameraDot.className = "camera-dot";
+
+    gestureText.textContent =
+        "Tunjukkan tangan ke kamera";
+
+    feedback.classList.add("hidden");
+}
+
+
+/* =========================================
+   20. EVENT BUTTON
+========================================= */
+
+gameExitButton.addEventListener("click", () => {
+
+    const yakin = confirm(
+        "Apakah kamu yakin ingin keluar dari permainan?"
+    );
+
+    if (yakin) {
+
+        stopCamera(true);
+
+        errorMessage.textContent = "";
+    }
+});
+
+startButton.addEventListener(
+    "click",
+    startCamera
+);
+
+restartButton.addEventListener(
+    "click",
+    restartGame
+);
+
+exitButton.addEventListener("click", () => {
+
+    stopCamera(true);
+});
+
+
+/* =========================================
+   21. BERSIHKAN SAAT KELUAR
+========================================= */
+
+window.addEventListener("pagehide", () => {
+
+    cameraActive = false;
+    gameActive = false;
+
+    if (cameraStream) {
+
+        cameraStream.getTracks().forEach(track => {
+            track.stop();
+        });
+    }
+
+    if (hands) {
+
+        try {
+
+            hands.close();
+
+        } catch (error) {}
+    }
+
+    if (animationFrame) {
+
+        cancelAnimationFrame(animationFrame);
+    }
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,280 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPDB 2027/2028 | SMK Ganesa</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.background {
+    position: fixed;
+    inset: 0;
+    background:
+        linear-gradient(
+            120deg,
+            rgba(10, 24, 42, 0.55),
+            rgba(10, 24, 42, 0.22),
+            rgba(10, 24, 42, 0.48)
+        ),
+        url("ganesa.png") center center / cover no-repeat;
+    z-index: -1;
+}
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 30px;
+}
+
+/* HEADER */
+.header {
+    color: white;
+    margin-bottom: 48px;
+    animation: fadeDown 1s ease;
+}
+
+.school {
+    font-size: 13px;
+    letter-spacing: 6px;
+    font-weight: 500;
+    margin-bottom: 22px;
+}
+
+.header h1 {
+    font-size: clamp(27px, 4vw, 48px);
+    font-weight: 700;
+    letter-spacing: 2px;
+    line-height: 1.3;
+    text-shadow: 0 4px 20px rgba(0,0,0,.3);
+}
+
+.header h2 {
+    font-size: clamp(43px, 6vw, 76px);
+    font-weight: 800;
+    letter-spacing: 4px;
+    margin-top: 5px;
+    color: #ffffff;
+    text-shadow: 0 4px 20px rgba(0,0,0,.35);
+}
+
+.line {
+    width: 70px;
+    height: 3px;
+    background: white;
+    margin: 22px auto;
+    border-radius: 10px;
+}
+
+.header p {
+    font-size: 13px;
+    font-weight: 300;
+    letter-spacing: 3px;
+}
+
+/* MENU */
+.menu {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 22px;
+    animation: fadeUp 1.2s ease;
+}
+
+.menu a {
+    width: 205px;
+    padding: 27px 20px;
+    text-decoration: none;
+    color: white;
+
+    background: rgba(255,255,255,.13);
+    border: 1px solid rgba(255,255,255,.65);
+    border-radius: 14px;
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    transition: .35s ease;
+}
+
+.menu a:hover {
+    background: rgba(255,255,255,.30);
+    transform: translateY(-8px);
+    border-color: white;
+    box-shadow: 0 12px 35px rgba(0,0,0,.25);
+}
+
+.menu h3 {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: 3px;
+}
+
+.menu p {
+    font-size: 11px;
+    margin-top: 8px;
+    font-weight: 300;
+    letter-spacing: 1px;
+}
+
+/* FOOTER */
+.footer {
+    position: absolute;
+    bottom: 23px;
+    width: 100%;
+    color: white;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+
+.footer span {
+    font-weight: 600;
+}
+
+/* ANIMATION */
+@keyframes fadeDown {
+    from {
+        opacity: 0;
+        transform: translateY(-25px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* MOBILE */
+@media(max-width: 700px) {
+    body {
+        overflow-y: auto;
+    }
+
+    .container {
+        padding: 65px 20px;
+    }
+
+    .header {
+        margin-bottom: 35px;
+    }
+
+    .school {
+        font-size: 10px;
+        letter-spacing: 4px;
+    }
+
+    .header h1 {
+        font-size: 25px;
+    }
+
+    .header h2 {
+        font-size: 43px;
+    }
+
+    .header p {
+        font-size: 10px;
+        letter-spacing: 2px;
+    }
+
+    .menu {
+        width: 100%;
+        gap: 13px;
+    }
+
+    .menu a {
+        width: 100%;
+        max-width: 320px;
+        padding: 20px;
+    }
+
+    .footer {
+        position: relative;
+        bottom: auto;
+        margin-top: 45px;
+        font-size: 9px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="background"></div>
+
+<main class="container">
+
+    <header class="header">
+
+        <div class="school">
+            SMK GANESA
+        </div>
+
+        <h1>PENERIMAAN PESERTA DIDIK BARU</h1>
+
+        <h2>2027/2028</h2>
+
+        <div class="line"></div>
+
+        <p>RUANG CERDAS TERAMPIL</p>
+
+    </header>
+
+    <nav class="menu">
+
+        <a href="bumbel.html">
+            <h3>BUMBEL</h3>
+            <p>Bimbingan Belajar</p>
+        </a>
+
+        <a href="combi.html">
+            <h3>COMBI</h3>
+            <p>Explore & Discover</p>
+        </a>
+
+        <a href="game.html">
+            <h3>GAME</h3>
+            <p>Learning Through Play</p>
+        </a>
+
+    </nav>
+
+    <footer class="footer">
+        DESIGNED & DEVELOPED BY
+        <span>TEACHER AI ANGGIA</span>
+        &nbsp; | &nbsp; SMK GANESA © 2027
+    </footer>
+
+</main>
+
+</body>
+</html>

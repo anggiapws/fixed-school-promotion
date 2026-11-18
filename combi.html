@@ -1,0 +1,1055 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magic Finger Universe</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: #050816;
+    color: white;
+    overflow: hidden;
+}
+
+button {
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+}
+
+/* =========================
+   HALAMAN PEMBUKA
+========================= */
+
+#intro {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background:
+        linear-gradient(rgba(3, 10, 30, 0.48), rgba(3, 10, 30, 0.72)),
+        url("ganesa.png") center center / cover no-repeat;
+    z-index: 10;
+    padding: 20px;
+    overflow: hidden;
+}
+
+/* Lapisan cahaya */
+#intro::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 45%,
+        rgba(34, 211, 238, 0.16),
+        transparent 45%);
+    animation: backgroundGlow 5s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+/* Judul */
+#intro h1 {
+    position: relative;
+    z-index: 2;
+    font-size: clamp(35px, 7vw, 75px);
+    font-weight: 800;
+    letter-spacing: 3px;
+    background: linear-gradient(
+        90deg,
+        #22d3ee,
+        #ffffff,
+        #a78bfa,
+        #ec4899,
+        #22d3ee
+    );
+    background-size: 300% auto;
+    color: transparent;
+    background-clip: text;
+    -webkit-background-clip: text;
+    opacity: 0;
+    animation:
+        titleAppear 1.2s cubic-bezier(.16, 1, .3, 1) forwards,
+        textShine 5s linear 1.2s infinite;
+}
+
+/* Garis animasi */
+.intro-line {
+    position: relative;
+    z-index: 2;
+    width: 0;
+    max-width: 220px;
+    height: 3px;
+    margin-top: 15px;
+    border-radius: 10px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #22d3ee,
+        #a78bfa,
+        #ec4899,
+        transparent
+    );
+    box-shadow: 0 0 15px #22d3ee;
+    animation: lineAppear 1.1s ease 0.6s forwards;
+}
+
+/* Deskripsi */
+#intro p {
+    position: relative;
+    z-index: 2;
+    color: #ffffff;
+    margin: 22px 0 30px;
+    max-width: 500px;
+    line-height: 1.8;
+    font-size: clamp(13px, 2vw, 16px);
+    text-shadow: 0 2px 8px rgba(0,0,0,.8);
+    opacity: 0;
+    animation: descriptionAppear 1s ease 0.8s forwards;
+}
+
+/* Tombol mulai */
+#startBtn {
+    position: relative;
+    z-index: 2;
+    padding: 16px 35px;
+    border-radius: 50px;
+    color: #050816;
+    background: linear-gradient(90deg, #22d3ee, #a78bfa);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    opacity: 0;
+    box-shadow: 0 0 0 rgba(34, 211, 238, 0);
+    animation:
+        buttonAppear 1s cubic-bezier(.16, 1, .3, 1) 1.3s forwards,
+        buttonGlow 2.5s ease-in-out 2.3s infinite;
+    transition: transform .3s ease, filter .3s ease;
+}
+
+#startBtn:hover {
+    transform: scale(1.07);
+    filter: brightness(1.15);
+}
+
+#startBtn:active {
+    transform: scale(.96);
+}
+
+#startBtn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* Copyright pembuka */
+#introCopyright {
+    opacity: 0;
+    animation: descriptionAppear 1s ease 1.6s forwards;
+}
+
+/* =========================
+   ANIMASI INTRO
+========================= */
+
+@keyframes titleAppear {
+    from {
+        opacity: 0;
+        transform: translateY(45px) scale(.85);
+        filter: blur(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes textShine {
+    from {
+        background-position: 0% center;
+    }
+    to {
+        background-position: 300% center;
+    }
+}
+
+@keyframes lineAppear {
+    from {
+        width: 0;
+        opacity: 0;
+    }
+    to {
+        width: 220px;
+        opacity: 1;
+    }
+}
+
+@keyframes descriptionAppear {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+        filter: blur(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+@keyframes buttonAppear {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(.8);
+        filter: blur(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes buttonGlow {
+    0%, 100% {
+        box-shadow:
+            0 0 12px rgba(34, 211, 238, .35),
+            0 0 25px rgba(167, 139, 250, .2);
+    }
+    50% {
+        box-shadow:
+            0 0 25px rgba(34, 211, 238, .8),
+            0 0 45px rgba(167, 139, 250, .5);
+    }
+}
+
+@keyframes backgroundGlow {
+    from {
+        opacity: .5;
+        transform: scale(1);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1.08);
+    }
+}
+
+/* =========================
+   AREA PERMAINAN
+========================= */
+
+#game {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+}
+
+#canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+#video {
+    display: none;
+}
+
+/* HEADER */
+.topbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 18px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(#0009, transparent);
+    pointer-events: none;
+}
+
+.logo {
+    font-weight: 800;
+    letter-spacing: 2px;
+    font-size: 17px;
+}
+
+.status {
+    background: #0f172acc;
+    border: 1px solid #334155;
+    border-radius: 30px;
+    padding: 9px 15px;
+    font-size: 12px;
+    color: #67e8f9;
+}
+
+/* INFORMASI TANGAN */
+.info {
+    position: absolute;
+    top: 75px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #020617bb;
+    border: 1px solid #334155;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 13px;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* TOMBOL KONTROL */
+.bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 15px 20px 38px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: linear-gradient(transparent, #000c);
+}
+
+.control {
+    background: #0f172acc;
+    color: white;
+    border: 1px solid #475569;
+    padding: 10px 15px;
+    border-radius: 30px;
+    font-size: 12px;
+}
+
+.control.active {
+    background: #0891b2;
+    border-color: #22d3ee;
+}
+
+/* PILIHAN WARNA */
+.colors {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: #0f172acc;
+    border: 1px solid #475569;
+    border-radius: 30px;
+    padding: 8px 12px;
+}
+
+.color {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+}
+
+.color.selected {
+    outline: 2px solid white;
+    outline-offset: 2px;
+}
+
+/* LOADING */
+#loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #020617cc;
+    z-index: 5;
+    font-size: 14px;
+    color: #67e8f9;
+    text-align: center;
+    padding: 20px;
+}
+
+/* TOMBOL KELUAR */
+#exitBtn {
+    background: #be123c;
+    border-color: #fb7185;
+}
+
+/* COPYRIGHT */
+.copyright {
+    position: absolute;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 10px;
+    letter-spacing: 1px;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.copyright span {
+    color: #22d3ee;
+    font-weight: 800;
+}
+
+/* COPYRIGHT HALAMAN AWAL */
+#introCopyright {
+    bottom: 15px;
+}
+
+/* COPYRIGHT SAAT BERMAIN */
+#gameCopyright {
+    bottom: 7px;
+}
+
+/* RESPONSIVE */
+@media(max-width:600px) {
+    .topbar {
+        padding: 12px;
+    }
+
+    .logo {
+        font-size: 13px;
+    }
+
+    .status {
+        font-size: 10px;
+        padding: 8px 10px;
+    }
+
+    .info {
+        top: 60px;
+        font-size: 11px;
+        padding: 8px 13px;
+    }
+
+    .bottom {
+        gap: 7px;
+        padding: 10px 10px 38px;
+    }
+
+    .control {
+        padding: 8px 11px;
+        font-size: 10px;
+    }
+
+    .colors {
+        gap: 7px;
+        padding: 7px 10px;
+    }
+
+    .color {
+        width: 15px;
+        height: 15px;
+    }
+
+    .copyright {
+        font-size: 9px;
+    }
+
+    #intro p {
+        max-width: 330px;
+    }
+}
+
+/* Mengurangi animasi jika perangkat meminta */
+@media (prefers-reduced-motion: reduce) {
+    #intro h1,
+    #intro p,
+    #startBtn,
+    #introCopyright,
+    .intro-line,
+    #intro::before {
+        animation: none;
+        opacity: 1;
+        filter: none;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- HALAMAN PEMBUKA -->
+<div id="intro">
+
+    <h1>MAGIC FINGER</h1>
+
+    <div class="intro-line"></div>
+
+    <p>
+        Tunjukkan tanganmu di depan kamera!
+        Ajak teman-temanmu dan lihat bagaimana
+        jari kalian terhubung menjadi jaringan cahaya.
+    </p>
+
+    <button id="startBtn">▶ MULAI PERMAINAN</button>
+
+    <div class="copyright" id="introCopyright">
+        © 2026 <span>Teacher AI Anggia Putri</span>. All Rights Reserved.
+    </div>
+
+</div>
+
+<!-- AREA PERMAINAN -->
+<div id="game">
+
+    <video id="video" autoplay muted playsinline></video>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="topbar">
+        <div class="logo">✦ MAGIC FINGER</div>
+        <div class="status" id="status">● MENYIAPKAN KAMERA</div>
+    </div>
+
+    <div class="info" id="info">
+        Tangan: 0 | Jari: 0
+    </div>
+
+    <div id="loading">
+        Mengaktifkan kamera dan hand tracking...
+    </div>
+
+    <!-- TOMBOL KONTROL -->
+    <div class="bottom">
+
+        <button class="control active" data-mode="network">
+            NETWORK
+        </button>
+
+        <button class="control" data-mode="mirror">
+            MIRROR
+        </button>
+
+        <button class="control" data-mode="cross">
+            CROSS
+        </button>
+
+        <button class="control" data-mode="single">
+            SINGLE
+        </button>
+
+        <div class="colors">
+
+            <button class="color selected"
+                data-color="#22d3ee"
+                style="background:#22d3ee">
+            </button>
+
+            <button class="color"
+                data-color="#ec4899"
+                style="background:#ec4899">
+            </button>
+
+            <button class="color"
+                data-color="#a78bfa"
+                style="background:#a78bfa">
+            </button>
+
+            <button class="color"
+                data-color="#facc15"
+                style="background:#facc15">
+            </button>
+
+            <button class="color"
+                data-color="#4ade80"
+                style="background:#4ade80">
+            </button>
+
+            <button class="color"
+                data-color="#ffffff"
+                style="background:#ffffff">
+            </button>
+
+        </div>
+
+        <button class="control" id="effectBtn">
+            GLOW
+        </button>
+
+        <button class="control" id="exitBtn">
+            ✕ KELUAR
+        </button>
+
+    </div>
+
+    <!-- COPYRIGHT PERMAINAN -->
+    <div class="copyright" id="gameCopyright">
+        © 2026 <span>Teacher AI Anggia Putri</span>. All Rights Reserved.
+    </div>
+
+</div>
+
+<script>
+const intro = document.getElementById("intro");
+const game = document.getElementById("game");
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d", {alpha: false});
+const loading = document.getElementById("loading");
+const statusText = document.getElementById("status");
+const info = document.getElementById("info");
+const startBtn = document.getElementById("startBtn");
+
+let handsModel = null;
+let stream = null;
+let allHands = [];
+let animationId = null;
+let trackingTimer = null;
+let busy = false;
+let running = false;
+let lastFrame = 0;
+
+let mode = "network";
+let lineColor = "#22d3ee";
+let effect = "glow";
+
+const MAX_HANDS = 10;
+const FINGERTIPS = [4, 8, 12, 16, 20];
+
+/* UKURAN CANVAS */
+function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+
+    canvas.width = Math.round(window.innerWidth * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+
+    canvas.style.width = window.innerWidth + "px";
+    canvas.style.height = window.innerHeight + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+window.addEventListener("resize", resizeCanvas);
+document.addEventListener("fullscreenchange", resizeCanvas);
+
+/* POSISI KAMERA */
+function getCameraRect() {
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 360;
+
+    const scale = Math.min(
+        window.innerWidth / vw,
+        window.innerHeight / vh
+    );
+
+    const width = vw * scale;
+    const height = vh * scale;
+
+    return {
+        x: (window.innerWidth - width) / 2,
+        y: (window.innerHeight - height) / 2,
+        w: width,
+        h: height
+    };
+}
+
+/* KONVERSI POSISI JARI */
+function pointFromLandmark(point, rect) {
+    return {
+        x: rect.x + (1 - point.x) * rect.w,
+        y: rect.y + point.y * rect.h
+    };
+}
+
+/* MENGAMBIL UJUNG JARI */
+function getAllFingertips(results, rect) {
+    const output = [];
+
+    if (!results.multiHandLandmarks) return output;
+
+    results.multiHandLandmarks.forEach((landmarks, handIndex) => {
+
+        const points = FINGERTIPS.map(index => {
+            return pointFromLandmark(landmarks[index], rect);
+        });
+
+        output.push({
+            handIndex,
+            points
+        });
+
+    });
+
+    return output;
+}
+
+/* MEMBUAT GARIS */
+function drawLine(a, b, color = lineColor) {
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = effect === "solid" ? 2 : 2.5;
+    ctx.lineCap = "round";
+
+    if (effect === "glow") {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+    } else {
+        ctx.shadowBlur = 0;
+    }
+
+    if (effect === "rainbow") {
+        const gradient = ctx.createLinearGradient(
+            a.x, a.y, b.x, b.y
+        );
+
+        gradient.addColorStop(0, "#22d3ee");
+        gradient.addColorStop(.5, "#ec4899");
+        gradient.addColorStop(1, "#a78bfa");
+
+        ctx.strokeStyle = gradient;
+    }
+
+    if (effect === "pulse") {
+        ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 200) * 0.5;
+    } else {
+        ctx.globalAlpha = 1;
+    }
+
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+}
+
+/* MODE NETWORK */
+function drawNetwork(hands) {
+    const points = hands.flatMap(hand => hand.points);
+
+    for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
+            drawLine(points[i], points[j]);
+        }
+    }
+}
+
+/* MODE SINGLE */
+function drawSingle(hands) {
+    hands.forEach(hand => {
+
+        const points = hand.points;
+
+        for (let i = 0; i < points.length; i++) {
+            for (let j = i + 1; j < points.length; j++) {
+                drawLine(points[i], points[j]);
+            }
+        }
+
+    });
+}
+
+/* MODE MIRROR */
+function drawMirror(hands) {
+    if (hands.length < 2) {
+        drawNetwork(hands);
+        return;
+    }
+
+    for (let h = 0; h < hands.length - 1; h++) {
+        for (let next = h + 1; next < hands.length; next++) {
+            for (let i = 0; i < 5; i++) {
+                drawLine(
+                    hands[h].points[i],
+                    hands[next].points[i]
+                );
+            }
+        }
+    }
+}
+
+/* MODE CROSS */
+function drawCross(hands) {
+    if (hands.length < 2) {
+        drawNetwork(hands);
+        return;
+    }
+
+    for (let h = 0; h < hands.length - 1; h++) {
+        for (let next = h + 1; next < hands.length; next++) {
+            for (let i = 0; i < 5; i++) {
+                drawLine(
+                    hands[h].points[i],
+                    hands[next].points[4 - i]
+                );
+            }
+        }
+    }
+}
+
+/* MEMILIH MODE */
+function drawConnections(hands) {
+    if (mode === "network") drawNetwork(hands);
+    if (mode === "single") drawSingle(hands);
+    if (mode === "mirror") drawMirror(hands);
+    if (mode === "cross") drawCross(hands);
+}
+
+/* ANIMASI UTAMA */
+function renderLoop(timestamp) {
+    if (!running) return;
+
+    animationId = requestAnimationFrame(renderLoop);
+
+    if (timestamp - lastFrame < 30) return;
+
+    lastFrame = timestamp;
+
+    const rect = getCameraRect();
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+    if (video.readyState >= 2) {
+
+        ctx.save();
+
+        ctx.translate(window.innerWidth, 0);
+        ctx.scale(-1, 1);
+
+        ctx.drawImage(
+            video,
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h
+        );
+
+        ctx.restore();
+    }
+
+    allHands = getAllFingertips(
+        window.latestResults || {},
+        rect
+    );
+
+    drawConnections(allHands);
+
+    const totalHands = allHands.length;
+    const totalFingers = totalHands * 5;
+
+    info.textContent =
+        `Tangan: ${totalHands} / ${MAX_HANDS} | Jari terdeteksi: ${totalFingers}`;
+
+    statusText.textContent =
+        totalHands > 0
+        ? "● HAND TRACKING AKTIF"
+        : "● TUNJUKKAN TANGANMU";
+}
+
+/* PROSES HAND TRACKING */
+async function trackingLoop() {
+    if (!running) return;
+
+    trackingTimer = setTimeout(trackingLoop, 33);
+
+    if (busy || !handsModel || video.readyState < 2) return;
+
+    busy = true;
+
+    try {
+        await handsModel.send({image: video});
+    } catch (error) {
+        console.error("Tracking error:", error);
+    } finally {
+        busy = false;
+    }
+}
+
+/* MEMULAI PERMAINAN */
+async function startGame() {
+    startBtn.disabled = true;
+    startBtn.textContent = "MEMUAT...";
+
+    intro.style.display = "none";
+    game.style.display = "block";
+
+    resizeCanvas();
+
+    try {
+        if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+        }
+    } catch (error) {
+        console.log("Fullscreen tidak tersedia:", error);
+    }
+
+    loading.style.display = "flex";
+
+    try {
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("Browser tidak mendukung akses kamera.");
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+                facingMode: "user",
+                width: {ideal: 640},
+                height: {ideal: 360},
+                frameRate: {ideal: 30, max: 30}
+            }
+        });
+
+        video.srcObject = stream;
+
+        await video.play();
+
+        handsModel = new Hands({
+            locateFile: file =>
+                `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        handsModel.setOptions({
+            maxNumHands: MAX_HANDS,
+            modelComplexity: 0,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        handsModel.onResults(results => {
+            window.latestResults = results;
+        });
+
+        running = true;
+
+        loading.style.display = "none";
+
+        trackingLoop();
+
+        animationId = requestAnimationFrame(renderLoop);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Kamera atau hand tracking gagal dijalankan.\n\n" +
+            "Pastikan kamera diizinkan dan internet aktif.\n" +
+            "Buka melalui localhost atau Live Server."
+        );
+
+        stopGame();
+    }
+}
+
+/* MENGHENTIKAN PERMAINAN */
+function stopGame() {
+    running = false;
+
+    if (trackingTimer) {
+        clearTimeout(trackingTimer);
+        trackingTimer = null;
+    }
+
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+
+    video.srcObject = null;
+
+    if (handsModel) {
+        handsModel.close();
+        handsModel = null;
+    }
+
+    window.latestResults = null;
+    allHands = [];
+    busy = false;
+
+    loading.style.display = "flex";
+    game.style.display = "none";
+    intro.style.display = "flex";
+
+    startBtn.disabled = false;
+    startBtn.textContent = "▶ MULAI PERMAINAN";
+
+    if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+    }
+}
+
+/* EVENT TOMBOL MULAI */
+startBtn.addEventListener("click", startGame);
+
+/* EVENT TOMBOL KELUAR */
+document.getElementById("exitBtn")
+    .addEventListener("click", stopGame);
+
+/* PILIH MODE */
+document.querySelectorAll("[data-mode]").forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        mode = button.dataset.mode;
+
+        document.querySelectorAll("[data-mode]")
+            .forEach(item => item.classList.remove("active"));
+
+        button.classList.add("active");
+
+    });
+
+});
+
+/* PILIH WARNA */
+document.querySelectorAll("[data-color]").forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        lineColor = button.dataset.color;
+
+        document.querySelectorAll("[data-color]")
+            .forEach(item => item.classList.remove("selected"));
+
+        button.classList.add("selected");
+
+    });
+
+});
+
+/* PILIH EFEK */
+document.getElementById("effectBtn")
+    .addEventListener("click", function() {
+
+        const effects = ["glow", "solid", "rainbow", "pulse"];
+
+        const current = effects.indexOf(effect);
+
+        effect = effects[(current + 1) % effects.length];
+
+        this.textContent = effect.toUpperCase();
+
+    });
+
+/* INISIALISASI */
+resizeCanvas();
+
+</script>
+
+</body>
+</html>

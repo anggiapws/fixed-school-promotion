@@ -1,0 +1,680 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magic Finger Camera</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:#101c29;
+  color:white;
+  font-family:'DM Sans',sans-serif;
+}
+
+header{
+  height:70px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 5%;
+  border-bottom:1px solid #ffffff17;
+  background:#142332;
+}
+
+.logo{
+  font-size:21px;
+  font-weight:700;
+  letter-spacing:.5px;
+}
+
+.logo span{color:#d9b27c}
+
+.status{
+  font-size:12px;
+  color:#aebac6;
+}
+
+main{
+  max-width:1200px;
+  margin:auto;
+  padding:28px 20px;
+}
+
+.intro h1{
+  font-size:30px;
+  margin:0 0 7px;
+}
+
+.intro p{
+  color:#9daab8;
+  font-size:13px;
+  margin:0 0 24px;
+}
+
+.layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 285px;
+  gap:20px;
+}
+
+.camera-card{
+  background:#192a3a;
+  padding:12px;
+  border:1px solid #ffffff13;
+  border-radius:17px;
+}
+
+.camera{
+  position:relative;
+  width:100%;
+  aspect-ratio:16/10;
+  overflow:hidden;
+  background:#07111b;
+  border-radius:11px;
+}
+
+video{
+  display:none;
+}
+
+#cameraCanvas{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+.live{
+  position:absolute;
+  top:14px;
+  left:14px;
+  background:#101c29cc;
+  padding:7px 12px;
+  border-radius:20px;
+  font-size:10px;
+  letter-spacing:1px;
+}
+
+.live i{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  background:#42d89b;
+  border-radius:50%;
+  margin-right:6px;
+}
+
+#message{
+  position:absolute;
+  bottom:13px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#101c29d9;
+  border:1px solid #ffffff20;
+  padding:9px 15px;
+  border-radius:20px;
+  font-size:11px;
+  white-space:nowrap;
+  max-width:90%;
+  overflow:hidden;
+}
+
+.panel{
+  background:#192a3a;
+  border:1px solid #ffffff13;
+  border-radius:17px;
+  padding:19px;
+}
+
+.panel h3{
+  margin:0 0 17px;
+  font-size:14px;
+}
+
+.label{
+  font-size:11px;
+  color:#aab7c4;
+  margin:15px 0 9px;
+  display:block;
+}
+
+select{
+  width:100%;
+  background:#101c29;
+  border:1px solid #ffffff20;
+  color:white;
+  padding:11px;
+  border-radius:8px;
+  outline:none;
+}
+
+.colors{
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+}
+
+.color{
+  width:27px;
+  height:27px;
+  border-radius:50%;
+  border:2px solid #ffffff55;
+  cursor:pointer;
+}
+
+.color.active{
+  outline:2px solid white;
+  outline-offset:3px;
+}
+
+button{
+  cursor:pointer;
+  font-family:inherit;
+}
+
+.btn{
+  width:100%;
+  border:0;
+  padding:12px;
+  border-radius:8px;
+  margin-top:10px;
+  font-weight:700;
+  font-size:12px;
+}
+
+.primary{
+  background:#d9b27c;
+  color:#142332;
+}
+
+.secondary{
+  background:#263b4e;
+  color:white;
+  border:1px solid #ffffff18;
+}
+
+button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+
+.info{
+  margin-top:17px;
+  border-top:1px solid #ffffff16;
+  padding-top:15px;
+  font-size:11px;
+  color:#aab7c4;
+  line-height:1.8;
+}
+
+.info strong{color:white}
+
+@media(max-width:800px){
+  .layout{grid-template-columns:1fr}
+  .panel{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  .panel h3,.info{grid-column:1/-1}
+}
+
+@media(max-width:500px){
+  .panel{display:block}
+  .intro h1{font-size:23px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">MAGIC FINGER<span>.</span></div>
+  <div class="status" id="status">● CAMERA OFF</div>
+</header>
+
+<main>
+
+  <div class="intro">
+    <h1>Shape your world.</h1>
+    <p>Bentuk objek virtual dengan gerakan jempol dan telunjuk.</p>
+  </div>
+
+  <div class="layout">
+
+    <section class="camera-card">
+      <div class="camera">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="cameraCanvas"></canvas>
+
+        <div class="live"><i></i> LIVE CAMERA</div>
+        <div id="message">Aktifkan kamera untuk memulai</div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h3>Pengaturan Efek</h3>
+
+      <div>
+        <label class="label">Pilih bentuk</label>
+        <select id="shape">
+          <option value="rect">Kotak</option>
+          <option value="rectangle">Persegi panjang</option>
+          <option value="circle">Lingkaran</option>
+          <option value="triangle">Segitiga</option>
+          <option value="diamond">Belah ketupat</option>
+          <option value="star">Bintang</option>
+          <option value="heart">Hati</option>
+          <option value="line">Garis penghubung</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="label">Warna efek</label>
+        <div class="colors">
+          <button class="color active" data-color="#42e8ff" style="background:#42e8ff"></button>
+          <button class="color" data-color="#ff5c9a" style="background:#ff5c9a"></button>
+          <button class="color" data-color="#b48aff" style="background:#b48aff"></button>
+          <button class="color" data-color="#ffe16b" style="background:#ffe16b"></button>
+          <button class="color" data-color="#66ffae" style="background:#66ffae"></button>
+          <button class="color" data-color="#ffffff" style="background:#ffffff"></button>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Ketebalan garis</label>
+        <select id="thickness">
+          <option value="2">Tipis</option>
+          <option value="4" selected>Sedang</option>
+          <option value="7">Tebal</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="label">Efek cahaya</label>
+        <select id="glow">
+          <option value="12">Neon lembut</option>
+          <option value="25" selected>Neon terang</option>
+          <option value="40">Neon kuat</option>
+          <option value="0">Tanpa cahaya</option>
+        </select>
+      </div>
+
+      <div style="grid-column:1/-1">
+        <button class="btn primary" id="start">AKTIFKAN KAMERA</button>
+        <button class="btn secondary" id="clear">HAPUS EFEK</button>
+        <button class="btn secondary" id="stop" disabled>MATIKAN KAMERA</button>
+      </div>
+
+      <div class="info">
+        <strong>Cara bermain:</strong><br>
+        1. Aktifkan kamera.<br>
+        2. Tunjukkan jempol dan telunjuk.<br>
+        3. Gerakkan jari untuk mengubah posisi efek.<br>
+        4. Jauhkan jari untuk memperbesar bentuk.<br>
+        5. Dekatkan jari untuk memperkecil bentuk.<br>
+        <br>
+        <strong>Catatan:</strong> Bentuk virtual mengikuti titik tengah kedua jari.
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("cameraCanvas");
+const ctx = canvas.getContext("2d");
+
+const startButton = document.getElementById("start");
+const stopButton = document.getElementById("stop");
+const clearButton = document.getElementById("clear");
+
+const shapeSelect = document.getElementById("shape");
+const thicknessSelect = document.getElementById("thickness");
+const glowSelect = document.getElementById("glow");
+
+let stream = null;
+let tracker = null;
+let active = false;
+let processing = false;
+let frameId = null;
+
+let currentColor = "#42e8ff";
+let handPoints = [];
+let smooth = null;
+
+function resize(){
+  const box = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1,2);
+
+  canvas.width = box.width*dpr;
+  canvas.height = box.height*dpr;
+
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+function getSize(){
+  return {
+    w:canvas.clientWidth,
+    h:canvas.clientHeight
+  };
+}
+
+function distance(a,b){
+  return Math.hypot(a.x-b.x,a.y-b.y);
+}
+
+function drawShape(x,y,w,h){
+  const shape = shapeSelect.value;
+
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.strokeStyle = currentColor;
+  ctx.lineWidth = Number(thicknessSelect.value);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.shadowColor = currentColor;
+  ctx.shadowBlur = Number(glowSelect.value);
+
+  const width = Math.max(12,w);
+  const height = Math.max(12,h);
+
+  ctx.beginPath();
+
+  if(shape === "rect"){
+    const size = Math.min(width,height);
+    ctx.rect(-size/2,-size/2,size,size);
+  }
+
+  else if(shape === "rectangle"){
+    ctx.rect(-width/2,-height/2,width,height);
+  }
+
+  else if(shape === "circle"){
+    ctx.ellipse(0,0,width/2,height/2,0,0,Math.PI*2);
+  }
+
+  else if(shape === "triangle"){
+    ctx.moveTo(0,-height/2);
+    ctx.lineTo(width/2,height/2);
+    ctx.lineTo(-width/2,height/2);
+    ctx.closePath();
+  }
+
+  else if(shape === "diamond"){
+    ctx.moveTo(0,-height/2);
+    ctx.lineTo(width/2,0);
+    ctx.lineTo(0,height/2);
+    ctx.lineTo(-width/2,0);
+    ctx.closePath();
+  }
+
+  else if(shape === "star"){
+    for(let i=0;i<10;i++){
+      const radius = i%2===0 ? 0.5 : 0.22;
+      const angle = -Math.PI/2 + i*Math.PI/5;
+      const px = Math.cos(angle)*width*radius;
+      const py = Math.sin(angle)*height*radius;
+
+      if(i===0) ctx.moveTo(px,py);
+      else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+  }
+
+  else if(shape === "heart"){
+    ctx.moveTo(0,height*.38);
+    ctx.bezierCurveTo(-width*.8,-height*.05,-width*.4,-height*.65,0,-height*.28);
+    ctx.bezierCurveTo(width*.4,-height*.65,width*.8,-height*.05,0,height*.38);
+    ctx.closePath();
+  }
+
+  else if(shape === "line"){
+    ctx.moveTo(-width/2,0);
+    ctx.lineTo(width/2,0);
+  }
+
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawHands(){
+  const size = getSize();
+
+  if(!handPoints.length) return;
+
+  handPoints.forEach(point=>{
+    const x = point.index.x*size.w;
+    const y = point.index.y*size.h;
+    const tx = point.thumb.x*size.w;
+    const ty = point.thumb.y*size.h;
+
+    // Garis penghubung jempol dan telunjuk
+    ctx.save();
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = currentColor;
+    ctx.shadowBlur = 10;
+
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(tx,ty);
+    ctx.stroke();
+
+    // Penanda ujung telunjuk
+    [point.index,point.thumb].forEach(p=>{
+      ctx.beginPath();
+      ctx.arc(p.x*size.w,p.y*size.h,5,0,Math.PI*2);
+      ctx.fillStyle = currentColor;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(p.x*size.w,p.y*size.h,10,0,Math.PI*2);
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    ctx.restore();
+
+    // Bentuk mengikuti posisi dan jarak kedua jari
+    const cx = (x+tx)/2;
+    const cy = (y+ty)/2;
+
+    const d = distance(
+      {x,y},
+      {x:tx,y:ty}
+    );
+
+    const w = Math.max(30,d*1.8);
+    const h = Math.max(30,d*1.8);
+
+    drawShape(cx,cy,w,h);
+  });
+}
+
+function render(){
+  if(!active) return;
+
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+
+  ctx.clearRect(0,0,w,h);
+
+  if(video.readyState >= 2){
+    // Kamera tetap utuh dan hanya dicerminkan seperti selfie
+    ctx.save();
+    ctx.translate(w,0);
+    ctx.scale(-1,1);
+    ctx.drawImage(video,0,0,w,h);
+    ctx.restore();
+
+    drawHands();
+  }
+
+  frameId = requestAnimationFrame(render);
+}
+
+async function setupTracker(){
+  tracker = new Hands({
+    locateFile:file=>
+      `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+
+  tracker.setOptions({
+    maxNumHands:2,
+    modelComplexity:1,
+    minDetectionConfidence:.65,
+    minTrackingConfidence:.65
+  });
+
+  tracker.onResults(results=>{
+    handPoints = [];
+
+    const landmarks = results.multiHandLandmarks || [];
+
+    landmarks.forEach(hand=>{
+      const thumb = hand[4];
+      const index = hand[8];
+
+      // Koordinat dicerminkan agar cocok dengan kamera selfie
+      handPoints.push({
+        thumb:{x:1-thumb.x,y:thumb.y},
+        index:{x:1-index.x,y:index.y}
+      });
+    });
+
+    const message = document.getElementById("message");
+
+    if(handPoints.length){
+      message.textContent = "Jari terdeteksi • Gerakkan jempol dan telunjuk";
+    }else{
+      message.textContent = "Tunjukkan jempol dan telunjuk di depan kamera";
+    }
+  });
+}
+
+async function trackingLoop(){
+  if(!active || processing) return;
+
+  if(video.readyState >= 2){
+    processing = true;
+
+    try{
+      await tracker.send({image:video});
+    }catch(error){
+      console.error(error);
+    }
+
+    processing = false;
+  }
+
+  if(active){
+    setTimeout(trackingLoop,30);
+  }
+}
+
+async function startCamera(){
+  try{
+    startButton.disabled = true;
+
+    document.getElementById("message").textContent =
+      "Meminta akses kamera...";
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio:false,
+      video:{
+        facingMode:"user",
+        width:{ideal:1280},
+        height:{ideal:720}
+      }
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    await setupTracker();
+
+    active = true;
+    resize();
+
+    document.getElementById("status").textContent =
+      "● CAMERA ACTIVE";
+
+    startButton.disabled = true;
+    stopButton.disabled = false;
+
+    trackingLoop();
+    render();
+
+  }catch(error){
+    console.error(error);
+
+    document.getElementById("message").textContent =
+      "Kamera gagal dibuka. Periksa izin kamera.";
+
+    startButton.disabled = false;
+  }
+}
+
+async function stopCamera(){
+  active = false;
+  handPoints = [];
+
+  if(stream){
+    stream.getTracks().forEach(track=>track.stop());
+    stream = null;
+  }
+
+  video.srcObject = null;
+
+  if(tracker){
+    await tracker.close();
+    tracker = null;
+  }
+
+  if(frameId) cancelAnimationFrame(frameId);
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  document.getElementById("status").textContent =
+    "● CAMERA OFF";
+
+  document.getElementById("message").textContent =
+    "Kamera dimatikan.";
+
+  startButton.disabled = false;
+  stopButton.disabled = true;
+}
+
+startButton.addEventListener("click",startCamera);
+stopButton.addEventListener("click",stopCamera);
+
+clearButton.addEventListener("click",()=>{
+  handPoints = [];
+  document.getElementById("message").textContent =
+    "Efek dibersihkan. Tunjukkan kembali tanganmu.";
+});
+
+document.querySelectorAll(".color").forEach(button=>{
+  button.addEventListener("click",()=>{
+    document.querySelectorAll(".color").forEach(b=>
+      b.classList.remove("active")
+    );
+
+    button.classList.add("active");
+    currentColor = button.dataset.color;
+  });
+});
+
+window.addEventListener("resize",resize);
+resize();
+</script>
+
+</body>
+</html>
